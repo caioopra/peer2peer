@@ -1,9 +1,7 @@
 #include <iostream>
 
-#include <algorithm>
-#include <string>
-
-#include "network.cpp"
+#include "../include/network.h"
+#include "../include/utils.h"
 
 // check if a string is a number
 bool is_number(const std::string &s) {

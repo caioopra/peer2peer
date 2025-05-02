@@ -1,15 +1,12 @@
 #include <cstring>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <unistd.h>
-#include <vector>
 
-#include <mutex>
 #include <thread>
 
-#include "utils.cpp"
-#include "network.cpp"
+#include "../include/utils.h"
+#include "../include/network.h"
 
 #define BASE_PORT 9000
 
