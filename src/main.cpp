@@ -38,6 +38,8 @@ int main(int argc, char *argv[]) {
   std::cout << "[MAIN] Sending hello message and receiving peers...\n";
   peer_network.send_hello_and_receive_peers();
 
+  user_interface(peer_network);
+
   // Simulate requesting an image
   const std::string image_name = "example.jpg";
   std::cout << "[MAIN] Requesting image: " << image_name << "\n";
