@@ -94,6 +94,11 @@ PeerSet PeerNetwork::_connect_to_peer(int sock) {
 
     return discovered;
   }
+
+  std::cerr << "[PEER_NETWORK] Invalid response from peer on 'HELLO': " << response
+            << std::endl;
+
+  return {};
 }
 
 void PeerNetwork::request_image(const std::string &image_name) {}
