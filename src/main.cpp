@@ -5,7 +5,6 @@
 
 #include <thread>
 
-#include "../include/PeerNetwork.h"
 #include "../include/utils.h"
 
 #define BASE_PORT 9000
@@ -31,6 +30,7 @@ int main(int argc, char *argv[]) {
   // starting server in a separate thread
   std::thread server_thread(&PeerNetwork::start_server, &peer_network);
   server_thread.detach();
+  sleep(1);
 
   std::cout << "[MAIN] Peer network started on port " << my_port << std::endl;
 
@@ -39,11 +39,6 @@ int main(int argc, char *argv[]) {
   peer_network.send_hello_and_receive_peers();
 
   user_interface(peer_network);
-
-  // Simulate requesting an image
-  const std::string image_name = "example.jpg";
-  std::cout << "[MAIN] Requesting image: " << image_name << "\n";
-  peer_network.request_image(image_name);
 
   // Keep the main thread alive to allow server to run
   while (true) {
