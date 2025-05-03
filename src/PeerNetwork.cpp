@@ -5,10 +5,11 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <thread>
+#include <unistd.h>
 
 #define IMAGE_FOLDER "../images/"
 
-PeerNetwork::PeerNetwork(int port) : port(port) {
+PeerNetwork::PeerNetwork(int port) : _port(port) {
   peer_list = {
       {"127.0.0.1", 9001},
       {"127.0.0.1", 9002},
@@ -23,12 +24,12 @@ void PeerNetwork::start_server() {
   sockaddr_in server_addr;
   server_addr.sin_family = AF_INET;
   server_addr.sin_addr.s_addr = INADDR_ANY;
-  server_addr.sin_port = htons(port);
+  server_addr.sin_port = htons(_port);
 
   bind(server_socket, (sockaddr *)&server_addr, sizeof(server_addr));
   listen(server_socket, 5);
 
-  std::cout << "[PEER_NETWORK] Server started on port " << port << std::endl;
+  std::cout << "[PEER_NETWORK] Server started on port " << _port << std::endl;
 
   while (true) {
     int client_socket = accept(server_socket, nullptr, nullptr);
@@ -36,7 +37,64 @@ void PeerNetwork::start_server() {
   }
 }
 
-void PeerNetwork::send_hello_and_receive_peers() {}
+void PeerNetwork::send_hello_and_receive_peers() {
+
+  std::lock_guard<std::mutex> lock(peer_mutex);
+
+  for (const auto &[ip, port] : peer_list) {
+    if (port == _port)
+      continue;
+
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    sockaddr_in peer_addr{};
+    peer_addr.sin_family = AF_INET;
+    peer_addr.sin_port = htons(port);
+    inet_pton(AF_INET, ip.c_str(), &peer_addr.sin_addr);
+
+    if (connect(sock, (sockaddr *)&peer_addr, sizeof(peer_addr)) != 0) {
+      close(sock);
+    }
+
+    PeerSet discovered = _connect_to_peer(sock);
+  }
+}
+
+PeerSet PeerNetwork::_connect_to_peer(int sock) {
+  send(sock, "HELLO", 5, 0);
+
+  char buffer[BUFFER_SIZE] = {0};
+  recv(sock, buffer, BUFFER_SIZE, 0);
+  std::string response(buffer);
+
+  if (response.find("PEERS:") == 0) {
+    PeerSet discovered;
+
+    std::string peer_data = response.substr(7);
+
+    size_t start = 0, end;
+    while ((end = peer_data.find(' ', start)) != std::string::npos) {
+      std::string peer_entry = peer_data.substr(start, end - start);
+
+      size_t sep = peer_entry.find(':');
+      std::string ip = peer_entry.substr(0, sep);
+      int port = std::stoi(peer_entry.substr(sep + 1));
+
+      discovered.insert({ip, port});
+      start = end + 1;
+    }
+
+    if (start < peer_data.size()) {
+      std::string peer_entry = peer_data.substr(start);
+      size_t sep = peer_entry.find(':');
+      std::string ip = peer_entry.substr(0, sep);
+      int port = std::stoi(peer_entry.substr(sep + 1));
+
+      discovered.insert({ip, port});
+    }
+
+    return discovered;
+  }
+}
 
 void PeerNetwork::request_image(const std::string &image_name) {}
 
