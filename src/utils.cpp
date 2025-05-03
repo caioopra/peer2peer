@@ -9,15 +9,15 @@ bool is_number(const std::string &s) {
 }
 
 void user_interface() {
-  std::string input;
+  // std::string input;
 
-  while (true) {
-    std::cout << "Enter image name to request (or 'quit' to exit): ";
-    std::cin >> input;
+  // while (true) {
+  //   std::cout << "Enter image name to request (or 'quit' to exit): ";
+  //   std::cin >> input;
 
-    if (input == "quit")
-      break;
+  //   if (input == "quit")
+  //     break;
 
-    request_image(input);
-  }
+  //   request_image(input);
+  // }
 }
