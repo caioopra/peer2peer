@@ -29,4 +29,8 @@ private:
   void send_image_to_peer(int client_socket, const std::string &image_name);
 
   void _connect_to_peer(int sock, PeerSet *discovered);
+
+  bool _connect_and_request(const std::string &ip, int port,
+                            const std::string &request,
+                            const std::string &image_name);
 };

@@ -1,5 +1,7 @@
 #include "../include/PeerNetwork.h"
 
+#include <cstring>
+#include <fstream>
 #include <iostream>
 
 #include <algorithm>
@@ -103,6 +105,62 @@ void PeerNetwork::_connect_to_peer(int sock, PeerSet *discovered) {
             << response << std::endl;
 }
 
-void PeerNetwork::request_image(const std::string &image_name) {}
+void PeerNetwork::request_image(const std::string &image_name) {
+  std::string request = "REQ " + image_name;
+
+  for (const auto &[ip, port] : peer_list) {
+    if (port == _port)
+      continue;
+
+    if (_connect_and_request(ip, port, request, image_name)) {
+      return;
+    }
+  }
+
+  std::cout << "[PEER_NETWORK] Image '" << image_name
+            << "' not found on any peer." << std::endl;
+}
+
+bool PeerNetwork::_connect_and_request(const std::string &ip, int port,
+                                       const std::string &request,
+                                       const std::string &image_name) {
+  int sock = socket(AF_INET, SOCK_STREAM, 0);
+
+  sockaddr_in peer_addr{};
+  peer_addr.sin_family = AF_INET;
+  peer_addr.sin_port = htons(port);
+  inet_pton(AF_INET, ip.c_str(), &peer_addr.sin_addr);
+
+  if (connect(sock, (sockaddr *)&peer_addr, sizeof(peer_addr)) == 0) {
+    send(sock, request.c_str(), request.length(), 0);
+
+    char response[BUFFER_SIZE] = {0};
+    recv(sock, response, 5, 0);
+
+    if (strncmp(response, "RES: ", 5) == 0) {
+      std::string filepath =
+          std::string(IMAGE_FOLDER) + "received_" + image_name;
+      std::ofstream file(filepath, std::ios::binary);
+
+      int bytes;
+      while ((bytes = recv(sock, response, BUFFER_SIZE, 0)) > 0) {
+        file.write(response, bytes);
+      }
+
+      file.close();
+
+      std::cout << "[PEER_NETWORK] Image '" << image_name
+                << "' received and saved to '" << filepath << "'." << std::endl;
+      close(sock);
+
+      return true;
+    } else {
+      std::cerr << "[PEER_NETWORK] Invalid response from peer on 'REQ': "
+                << response << std::endl;
+    }
+  }
+  close(sock);
+  return false;
+}
 
 void PeerNetwork::handle_client(int client_socket) {}
