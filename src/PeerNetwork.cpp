@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include <algorithm>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <thread>
@@ -38,6 +39,7 @@ void PeerNetwork::start_server() {
 }
 
 void PeerNetwork::send_hello_and_receive_peers() {
+  PeerSet discovered;
 
   std::lock_guard<std::mutex> lock(peer_mutex);
 
@@ -51,15 +53,21 @@ void PeerNetwork::send_hello_and_receive_peers() {
     peer_addr.sin_port = htons(port);
     inet_pton(AF_INET, ip.c_str(), &peer_addr.sin_addr);
 
-    if (connect(sock, (sockaddr *)&peer_addr, sizeof(peer_addr)) != 0) {
-      close(sock);
+    if (connect(sock, (sockaddr *)&peer_addr, sizeof(peer_addr)) == 0) {
+      _connect_to_peer(sock, &discovered);
     }
 
-    PeerSet discovered = _connect_to_peer(sock);
+    close(sock);
+  }
+
+  for (const auto &p : discovered) {
+    if (std::find(peer_list.begin(), peer_list.end(), p) == peer_list.end()) {
+      peer_list.push_back(p);
+    }
   }
 }
 
-PeerSet PeerNetwork::_connect_to_peer(int sock) {
+void PeerNetwork::_connect_to_peer(int sock, PeerSet *discovered) {
   send(sock, "HELLO", 5, 0);
 
   char buffer[BUFFER_SIZE] = {0};
@@ -67,8 +75,6 @@ PeerSet PeerNetwork::_connect_to_peer(int sock) {
   std::string response(buffer);
 
   if (response.find("PEERS:") == 0) {
-    PeerSet discovered;
-
     std::string peer_data = response.substr(7);
 
     size_t start = 0, end;
@@ -79,7 +85,7 @@ PeerSet PeerNetwork::_connect_to_peer(int sock) {
       std::string ip = peer_entry.substr(0, sep);
       int port = std::stoi(peer_entry.substr(sep + 1));
 
-      discovered.insert({ip, port});
+      discovered->insert({ip, port});
       start = end + 1;
     }
 
@@ -89,16 +95,12 @@ PeerSet PeerNetwork::_connect_to_peer(int sock) {
       std::string ip = peer_entry.substr(0, sep);
       int port = std::stoi(peer_entry.substr(sep + 1));
 
-      discovered.insert({ip, port});
+      discovered->insert({ip, port});
     }
-
-    return discovered;
   }
 
-  std::cerr << "[PEER_NETWORK] Invalid response from peer on 'HELLO': " << response
-            << std::endl;
-
-  return {};
+  std::cerr << "[PEER_NETWORK] Invalid response from peer on 'HELLO': "
+            << response << std::endl;
 }
 
 void PeerNetwork::request_image(const std::string &image_name) {}

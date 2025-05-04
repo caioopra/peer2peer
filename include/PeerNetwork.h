@@ -1,7 +1,7 @@
 #include <mutex>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
 
 #define BUFFER_SIZE 4096
 
@@ -28,5 +28,5 @@ private:
   void respond_with_peer_list(int client_socket);
   void send_image_to_peer(int client_socket, const std::string &image_name);
 
-  PeerSet _connect_to_peer(int sock);
+  void _connect_to_peer(int sock, PeerSet *discovered);
 };
