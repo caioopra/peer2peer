@@ -100,9 +100,6 @@ void PeerNetwork::_connect_to_peer(int sock, PeerSet *discovered) {
       discovered->insert({ip, port});
     }
   }
-
-  std::cerr << "[PEER_NETWORK] Invalid response from peer on 'HELLO': "
-            << response << std::endl;
 }
 
 void PeerNetwork::request_image(const std::string &image_name) {
@@ -163,4 +160,51 @@ bool PeerNetwork::_connect_and_request(const std::string &ip, int port,
   return false;
 }
 
-void PeerNetwork::handle_client(int client_socket) {}
+void PeerNetwork::handle_client(int client_socket) {
+  char buffer[BUFFER_SIZE] = {0};
+
+  recv(client_socket, buffer, BUFFER_SIZE, 0);
+  std::string request(buffer);
+
+  if (request.find("REQ: ") == 0) {
+    std::string image_name = request.substr(5);
+    send_image_to_peer(client_socket, image_name);
+  } else if (request == "HELLO") {
+    respond_with_peer_list(client_socket);
+  }
+
+  close(client_socket);
+}
+
+void PeerNetwork::send_image_to_peer(int client_socket,
+                                     const std::string &image_name) {
+  char buffer[BUFFER_SIZE] = {0};
+
+  std::string filepath = IMAGE_FOLDER + image_name;
+  std::ifstream file(filepath, std::ios::binary);
+
+  if (file) {
+    send(client_socket, "RES: ", 5, 0);
+    while (!file.eof()) {
+      file.read(buffer, BUFFER_SIZE);
+      send(client_socket, buffer, file.gcount(), 0);
+    }
+  } else {
+    std::string err = "ERR: File not found";
+    send(client_socket, err.c_str(), err.length(), 0);
+  }
+}
+
+void PeerNetwork::respond_with_peer_list(int client_socket) {
+  std::string msg = "PEERS:";
+
+  std::lock_guard<std::mutex> lock(peer_mutex);
+  for (const auto &[ip, port] : peer_list) {
+    if (port == _port)
+      continue;
+
+    msg += " " + ip + ":" + std::to_string(port);
+  }
+
+  send(client_socket, msg.c_str(), msg.length(), 0);
+}
