@@ -10,7 +10,7 @@
 #include <thread>
 #include <unistd.h>
 
-#define IMAGE_FOLDER "../images/"
+#define IMAGE_FOLDER "images/"
 
 PeerNetwork::PeerNetwork(int port) : _port(port) {
   peer_list = {
@@ -103,7 +103,7 @@ void PeerNetwork::_connect_to_peer(int sock, PeerSet *discovered) {
 }
 
 void PeerNetwork::request_image(const std::string &image_name) {
-  std::string request = "REQ " + image_name;
+  std::string request = "REQ: " + image_name;
 
   for (const auto &[ip, port] : peer_list) {
     if (port == _port)
@@ -170,6 +170,8 @@ void PeerNetwork::handle_client(int client_socket) {
     std::string image_name = request.substr(5);
     send_image_to_peer(client_socket, image_name);
   } else if (request == "HELLO") {
+    std::cout << "[PEER_NETWORK " << _port << "] Received HELLO from peer."
+              << std::endl;
     respond_with_peer_list(client_socket);
   }
 
@@ -182,6 +184,9 @@ void PeerNetwork::send_image_to_peer(int client_socket,
 
   std::string filepath = IMAGE_FOLDER + image_name;
   std::ifstream file(filepath, std::ios::binary);
+
+  std::cout << "[PEER_NETWORK " << _port << "] Searching for file: " << filepath
+            << std::endl;
 
   if (file) {
     send(client_socket, "RES: ", 5, 0);
