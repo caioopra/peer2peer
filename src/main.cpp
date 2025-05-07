@@ -40,10 +40,5 @@ int main(int argc, char *argv[]) {
 
   user_interface(peer_network);
 
-  // Keep the main thread alive to allow server to run
-  while (true) {
-    sleep(1);
-  }
-
   return 0;
 }
