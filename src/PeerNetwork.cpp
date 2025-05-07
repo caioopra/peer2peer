@@ -147,8 +147,9 @@ bool PeerNetwork::_connect_and_request(const std::string &ip, int port,
 
       file.close();
 
-      std::cout << "[PEER_NETWORK] - SUCCESS: Image '" << image_name
-                << "' received and saved to '" << filepath << "'." << std::endl;
+      std::cout << "[PEER_NETWORK " << _port << "] - SUCCESS: Image '"
+                << image_name << "' received and saved to '" << filepath << "'."
+                << std::endl;
       close(sock);
 
       return true;
