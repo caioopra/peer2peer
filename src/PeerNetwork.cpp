@@ -32,7 +32,8 @@ void PeerNetwork::start_server() {
   bind(server_socket, (sockaddr *)&server_addr, sizeof(server_addr));
   listen(server_socket, 5);
 
-  std::cout << "[PEER_NETWORK] Server started on port " << _port << std::endl;
+  std::cout << "[PEER_NETWORK " << _port << "] Server started on port " << _port
+            << std::endl;
 
   while (true) {
     int client_socket = accept(server_socket, nullptr, nullptr);
@@ -114,7 +115,7 @@ void PeerNetwork::request_image(const std::string &image_name) {
     }
   }
 
-  std::cout << "[PEER_NETWORK] Image '" << image_name
+  std::cout << "[PEER_NETWORK " << _port << "] Image '" << image_name
             << "' not found on any peer." << std::endl;
 }
 
@@ -152,8 +153,9 @@ bool PeerNetwork::_connect_and_request(const std::string &ip, int port,
 
       return true;
     } else {
-      std::cerr << "[PEER_NETWORK] Invalid response from peer on 'REQ': "
-                << response << std::endl;
+      std::cerr << "[PEER_NETWORK " << _port
+                << "] Invalid response from peer on 'REQ': " << response
+                << std::endl;
     }
   }
   close(sock);
@@ -194,9 +196,15 @@ void PeerNetwork::send_image_to_peer(int client_socket,
       file.read(buffer, BUFFER_SIZE);
       send(client_socket, buffer, file.gcount(), 0);
     }
+
+    std::cout << "[PEER_NETWORK " << _port << "] Sent image " << image_name
+              << " to peer." << std::endl;
   } else {
     std::string err = "ERR: File not found";
     send(client_socket, err.c_str(), err.length(), 0);
+
+    std::cout << "[PEER_NETWORK " << _port << "] Requested image '"
+              << image_name << "' not found." << std::endl;
   }
 }
 
