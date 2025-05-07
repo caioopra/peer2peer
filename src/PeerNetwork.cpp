@@ -115,7 +115,7 @@ void PeerNetwork::request_image(const std::string &image_name) {
     }
   }
 
-  std::cout << "[PEER_NETWORK " << _port << "] Image '" << image_name
+  std::cout << "[PEER_NETWORK " << _port << "] - ERROR: Image '" << image_name
             << "' not found on any peer." << std::endl;
 }
 
@@ -147,15 +147,19 @@ bool PeerNetwork::_connect_and_request(const std::string &ip, int port,
 
       file.close();
 
-      std::cout << "[PEER_NETWORK] Image '" << image_name
+      std::cout << "[PEER_NETWORK] - SUCCESS: Image '" << image_name
                 << "' received and saved to '" << filepath << "'." << std::endl;
       close(sock);
 
       return true;
+    } else if (strncmp(response, "ERR: ", 5) == 0) {
+      std::cerr << "[PEER_NETWORK " << _port
+                << "] - ERROR: Peer responded with error: " << response
+                << std::endl;
     } else {
       std::cerr << "[PEER_NETWORK " << _port
-                << "] Invalid response from peer on 'REQ': " << response
-                << std::endl;
+                << "] - ERROR: Invalid response from peer on 'REQ': "
+                << response << std::endl;
     }
   }
   close(sock);
